@@ -1,6 +1,12 @@
+from dotenv import load_dotenv
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import p2p
+from apscheduler.schedulers.background import BackgroundScheduler
+from .services.monitoring_service import MonitoringService
+
+load_dotenv()
 
 # Definición de FastAPI
 app = FastAPI(
@@ -8,6 +14,7 @@ app = FastAPI(
     description="Api para notificaciones en Binance",
     version="1.0.0"
 )
+print("Ejecutando en entorno: ", os.environ.get("ENVIRONMENT"))
 
 # Middleware CORS
 app.add_middleware(
@@ -20,6 +27,11 @@ app.add_middleware(
 
 # Rutas de la aplicación
 app.include_router(p2p.router, prefix="/v1/monitoring", tags=["Monitoreo"])
+
+# Ejecución automática de tareas
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(MonitoringService.consult_market_usdt, 'interval', seconds=10)
+# scheduler.start()
 
 @app.get("/")
 async def root():
