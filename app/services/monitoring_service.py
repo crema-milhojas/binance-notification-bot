@@ -1,16 +1,17 @@
 import os
 from typing import List
 from datetime import datetime
-from ..schemas.price_monitoring_response import PriceMonitoringResponse
+from ..schemas.arbitration_ustd_response import ArbitrationUstdResponse
 import requests
 import math
 from typing import List
+from ..utils.telegram import send_message
 
 
 class MonitoringService:
      rows = 10
 
-     def consult_market_usdt(self, trans_amount: int) -> List[PriceMonitoringResponse]:
+     def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
           print("Obteniendo precios de COMPRA USDT")          
           buy_price = self.get_best_price('BUY', ["Yape", "Plin"], trans_amount)
 
@@ -20,13 +21,17 @@ class MonitoringService:
           spread = round(sell_price - buy_price, 4)
           spread_pct = round((spread / buy_price) * 100, 2)
 
+          message = (
+               f"🟢 Mejor precio COMPRA USDT: S/ {buy_price}\n"
+               f"🔴 Mejor precio VENTA USDT: S/ {sell_price}\n"
+               f"💰 Spread: S/ {spread} ({spread_pct}%)"
+          )
+          send_message(message)
           print("\n")
-          print(f"🟢 Mejor precio de COMPRA USDT: S/ {buy_price}")
-          print(f"🔴 Mejor precio de VENTA USDT: S/ {sell_price}")
-          print(f"💰 Spread: S/ {spread} ({spread_pct}%)")
+          print(message)
 
           return [
-               PriceMonitoringResponse(
+               ArbitrationUstdResponse(
                     response_code="00",
                     message="OK",
                     data={

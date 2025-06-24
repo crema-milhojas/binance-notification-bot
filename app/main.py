@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # Rutas de la aplicación
-app.include_router(p2p.router, prefix="/v1/monitoring", tags=["Monitoreo"])
+app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
 
 # Ejecución automática de tareas
 # scheduler = BackgroundScheduler()

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Query
 from typing import List
-from ..schemas.price_monitoring_response import PriceMonitoringResponse
+from ..schemas.arbitration_ustd_response import ArbitrationUstdResponse
 from ..services.monitoring_service import MonitoringService
 
 router = APIRouter()
 
-@router.get("/ustd", response_model=List[PriceMonitoringResponse])
-def price_monitoring(trans_amount: int = Query(100, description="Monto de la transacción")):
+@router.get("/arbitration-ustd", response_model=List[ArbitrationUstdResponse])
+def arbitration_ustd(trans_amount: int = Query(100, description="Monto de la transacción")):
     monitoringService = MonitoringService()
-    return monitoringService.consult_market_usdt(trans_amount)
+    return monitoringService.arbitration_ustd(trans_amount)
