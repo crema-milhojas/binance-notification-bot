@@ -1,12 +1,11 @@
-from dotenv import load_dotenv
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import p2p
+# from .routes import p2p
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.monitoring_service import MonitoringService
 
-load_dotenv()
+
 
 # Definición de FastAPI
 app = FastAPI(
@@ -26,12 +25,18 @@ app.add_middleware(
 )
 
 # Rutas de la aplicación
-app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
+# app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
 
 # Ejecución automática de tareas
-# scheduler = BackgroundScheduler()
-# scheduler.add_job(MonitoringService.consult_market_usdt, 'interval', seconds=10)
-# scheduler.start()
+scheduler = BackgroundScheduler()
+monitoring_service = MonitoringService()
+scheduler.add_job(
+    monitoring_service.arbitration_ustd,
+    'interval',
+    seconds=30,
+    args=[20]
+)
+scheduler.start()
 
 @app.get("/")
 async def root():

@@ -19,5 +19,5 @@ fastapi dev main.py
 ### Producción
 
 ```bash
-uvicorn app.main:app --reload
+py main.py
 ```

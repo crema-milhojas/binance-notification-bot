@@ -9,7 +9,9 @@ from ..utils.telegram import send_message
 
 
 class MonitoringService:
-     rows = 10
+     ROWS = 10
+     # SPREAD_EXPECTED=  0.0025
+     SPREAD_EXPECTED=  -10
 
      def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
           print("Obteniendo precios de COMPRA USDT")          
@@ -21,14 +23,16 @@ class MonitoringService:
           spread = round(sell_price - buy_price, 4)
           spread_pct = round((spread / buy_price) * 100, 2)
 
-          message = (
-               f"🟢 Mejor precio COMPRA USDT: S/ {buy_price}\n"
-               f"🔴 Mejor precio VENTA USDT: S/ {sell_price}\n"
-               f"💰 Spread: S/ {spread} ({spread_pct}%)"
-          )
-          send_message(message)
-          print("\n")
-          print(message)
+          if(spread >= self.SPREAD_EXPECTED):
+               message = (
+                    f"💲 Monto mínimo: S/ {trans_amount}\n"
+                    f"🟢 Mejor precio COMPRA USDT: S/ {buy_price}\n"
+                    f"🔴 Mejor precio VENTA USDT: S/ {sell_price}\n"
+                    f"💰 Spread: S/ {spread} ({spread_pct}%)"
+               )
+               send_message(message)
+               print("\n")
+               print(message)
 
           return [
                ArbitrationUstdResponse(
@@ -52,7 +56,7 @@ class MonitoringService:
           buyers_list.extend(first_response.get("data", []))
 
           total_items = first_response.get("total", 0)
-          total_pages = math.ceil(total_items / self.rows)
+          total_pages = math.ceil(total_items / self.ROWS)
 
           for page in range(2, total_pages + 1):
                response = fetch_page(page)
@@ -86,7 +90,7 @@ class MonitoringService:
             "asset": "USDT",
             "fiat": "PEN",
             "page": page,
-            "rows": self.rows,
+            "rows": self.ROWS,
             "tradeType": tradeType,
             "payTypes": payTypes,
             "publisherType": None,

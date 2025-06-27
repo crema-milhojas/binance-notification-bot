@@ -6,6 +6,6 @@ from ..services.monitoring_service import MonitoringService
 router = APIRouter()
 
 @router.get("/arbitration-ustd", response_model=List[ArbitrationUstdResponse])
-def arbitration_ustd(trans_amount: int = Query(100, description="Monto de la transacción")):
+def arbitration_ustd(trans_amount: int = Query(20, description="Monto de la transacción")):
     monitoringService = MonitoringService()
     return monitoringService.arbitration_ustd(trans_amount)
