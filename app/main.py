@@ -34,7 +34,7 @@ scheduler.add_job(
     monitoring_service.arbitration_ustd,
     'interval',
     seconds=30,
-    args=[20]
+    args=[int(os.environ.get("MINIMUM_AMOUNT"))]
 )
 scheduler.start()
 
