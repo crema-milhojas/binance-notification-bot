@@ -10,8 +10,7 @@ from ..utils.telegram import send_message
 
 class MonitoringService:
      ROWS = 10
-     # SPREAD_EXPECTED=  0.0025
-     SPREAD_EXPECTED=  -10
+     SPREAD_EXPECTED=  0.0025
 
      def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
           print("Obteniendo precios de COMPRA USDT")          
