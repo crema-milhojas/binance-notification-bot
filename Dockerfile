@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 8000
 
 # Comando por defecto para ejecutar la app con recarga automática
-CMD ["python", "main.py"]
+# CMD ["python", "main.py"]
