@@ -17,6 +17,7 @@ class MonitoringService:
      session: Session = SessionLocal()
 
      def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
+          print("\n")
           print("Obteniendo precios de COMPRA USDT")          
           buy_price = self.get_best_price('BUY', ["Yape", "Plin"], trans_amount)
 
@@ -26,7 +27,13 @@ class MonitoringService:
           spread = round(sell_price - buy_price, 4)
           spread_pct = round((spread / buy_price) * 100, 2)
 
-          if(spread >= self.SPREAD_EXPECTED):
+          last_arbitration_ustd = self.session.query(ArbitrationUstd).order_by(ArbitrationUstd.create_at.desc()).first()
+          last_spread = None
+          
+          if(last_arbitration_ustd):
+               last_spread = last_arbitration_ustd.spread
+
+          if(spread >= self.SPREAD_EXPECTED and not math.isclose(spread, last_spread, abs_tol=1e-6)):
                message = (
                     f"💲 Monto mínimo: S/ {trans_amount}\n"
                     f"🟢 Mejor precio COMPRA USDT: S/ {buy_price}\n"
