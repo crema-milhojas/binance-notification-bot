@@ -1,16 +1,20 @@
 import os
 from typing import List
-from datetime import datetime
 from ..schemas.arbitration_ustd_response import ArbitrationUstdResponse
 import requests
 import math
 from typing import List
 from ..utils.telegram import send_message
+from sqlalchemy.orm import Session
+from ..config.db import SessionLocal
+from ..models.arbitration_ustd import ArbitrationUstd
 
 
 class MonitoringService:
      ROWS = 10
      SPREAD_EXPECTED = 0.0025
+
+     session: Session = SessionLocal()
 
      def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
           print("Obteniendo precios de COMPRA USDT")          
@@ -32,6 +36,21 @@ class MonitoringService:
                send_message(message)
                print("\n")
                print(message)
+
+          new_arbitration_ustd = ArbitrationUstd(
+               trans_amount = trans_amount,
+               buy_price = buy_price,
+               sell_price = sell_price,
+               spread = spread
+          )
+
+          try:
+               self.session.add(new_arbitration_ustd)
+               self.session.commit()
+          except Exception as err:
+               print(err)
+          finally:
+               self.session.close()
 
           return [
                ArbitrationUstdResponse(

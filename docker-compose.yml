@@ -10,14 +10,23 @@ services:
       - .:/app
     environment:
       - ENVIRONMENT=${ENVIRONMENT}
-      - DATABASE_URL=${DATABASE_URL}
+      - PORT=${PORT}
       - URL_BINANCE=${URL_BINANCE}
       - TOKEN_TELEGRAM=${TOKEN_TELEGRAM}
       - CHAT_ID_TELEGRAM=${CHAT_ID_TELEGRAM}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - MINIMUM_AMOUNT=${MINIMUM_AMOUNT}
 
       # Agrega aquí otras variables de entorno necesarias
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && python main.py"
 
   db:
     image: postgres:16
@@ -28,9 +37,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - ${POSTGRES_PORT}:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

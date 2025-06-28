@@ -21,3 +21,15 @@ fastapi dev main.py
 ```bash
 py main.py
 ```
+
+### Generar migración
+
+```bash
+alembic revision --autogenerate -m "crear tabla usuarios"
+```
+
+### Aplicar cambios
+
+```bash
+alembic upgrade head
+```
