@@ -19,10 +19,14 @@ class MonitoringService:
      def arbitration_ustd(self, trans_amount: int) -> List[ArbitrationUstdResponse]:
           print("\n")
           print("Obteniendo precios de COMPRA USDT")          
-          buy_price = self.get_best_price('BUY', ["Yape", "Plin"], trans_amount)
+          buy_info = self.get_best_price('BUY', ["Yape", "Plin"], trans_amount)
+          buy_price = buy_info["price"]
+          buy_nickname = buy_info["nickname"]
 
           print("Obteniendo precios de VENTA USDT")
-          sell_price = self.get_best_price('SELL', ["Yape", "Plin"], trans_amount)
+          sell_info = self.get_best_price('SELL', ["Yape", "Plin"], trans_amount)
+          sell_price = sell_info["price"]
+          sell_nickname = sell_info["nickname"]
 
           spread = round(sell_price - buy_price, 4)
           spread_pct = round((spread / buy_price) * 100, 2)
@@ -36,8 +40,8 @@ class MonitoringService:
           if(spread >= self.SPREAD_EXPECTED and not math.isclose(spread, last_spread, abs_tol=1e-6)):
                message = (
                     f"💲 Monto mínimo: S/ {trans_amount}\n"
-                    f"🟢 Mejor precio COMPRA USDT: S/ {buy_price}\n"
-                    f"🔴 Mejor precio VENTA USDT: S/ {sell_price}\n"
+                    f"🟢 Mejor precio COMPRA USDT: S/ {buy_price} al usuario {buy_nickname}\n"
+                    f"🔴 Mejor precio VENTA USDT: S/ {sell_price} al usuario {sell_nickname}\n"
                     f"💰 Spread: S/ {spread} ({spread_pct}%)"
                )
                send_message(message)
@@ -47,7 +51,9 @@ class MonitoringService:
           new_arbitration_ustd = ArbitrationUstd(
                trans_amount = trans_amount,
                buy_price = buy_price,
+               buyer_nickname = buy_nickname,
                sell_price = sell_price,
+               seller_nickname= sell_nickname,
                spread = spread
           )
 
@@ -89,24 +95,22 @@ class MonitoringService:
           
           print(f"Número de precios encontrados: {len(buyers_list)}")
 
+          price_and_advertiser = [
+               (float(item["adv"]["price"]), item["advertiser"]["nickName"])
+               for item in buyers_list
+               if "adv" in item and "price" in item["adv"] and "advertiser" in item and "nickName" in item["advertiser"]
+          ]
+
           if(tradeType == "BUY"):
-              max_price = min(
-                    float(item["adv"]["price"])
-                    for item in buyers_list
-                    if "adv" in item and "price" in item["adv"]
-               )
+              price, nickname = min(price_and_advertiser, key=lambda x: x[0])
+              return {"price": price, "nickname": nickname}
+
           elif(tradeType == "SELL"):
-               max_price = max(
-                    float(item["adv"]["price"])
-                    for item in buyers_list
-                    if "adv" in item and "price" in item["adv"]
-               )
+               price, nickname = max(price_and_advertiser, key=lambda x: x[0])
+               return {"price": price, "nickname": nickname}
           else:
                raise Exception("Tipo de comercio no soportado")
 
-         
-
-          return max_price
 
 
      def search_p2p_binance(self, page: int, tradeType: str, payTypes: List[str], transAmount: int = None) -> dict:
