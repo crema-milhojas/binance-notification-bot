@@ -18,15 +18,16 @@ jobs:
         run: |
           echo "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
           echo "PORT=${{ secrets.PORT }}" >> .env
-          echo "URL_BINANCE=${{secrets.URL_BINANCE}}" >> .env
-          echo "TOKEN_TELEGRAM=${{secrets.TOKEN_TELEGRAM}}" >> .env
-          echo "CHAT_ID_TELEGRAM=${{secrets.CHAT_ID_TELEGRAM}}" >> .env
-          echo "POSTGRES_HOST=${{secrets.POSTGRES_HOST}}" >> .env
-          echo "POSTGRES_PORT=${{secrets.POSTGRES_PORT}}" >> .env
-          echo "POSTGRES_USER=${{secrets.POSTGRES_USER}}" >> .env
-          echo "POSTGRES_PASSWORD=${{secrets.POSTGRES_PASSWORD}}" >> .env
-          echo "POSTGRES_DB=${{secrets.POSTGRES_DB}}" >> .env
-          echo "MINIMUM_AMOUNT=${{secrets.MINIMUM_AMOUNT}}" >> .env
+          echo "URL_BINANCE=${{ secrets.URL_BINANCE }}" >> .env
+          echo "TOKEN_TELEGRAM=${{ secrets.TOKEN_TELEGRAM }}" >> .env
+          echo "CHAT_ID_TELEGRAM=${{ secrets.CHAT_ID_TELEGRAM }}" >> .env
+          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> .env
+          echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "MINIMUM_AMOUNT=${{ secrets.MINIMUM_AMOUNT }}" >> .env
+
       - name: 🔐 Preparar clave SSH
         run: |
           echo "${{ secrets.DEV_SSH_PEM }}" > dev_key.pem
@@ -37,7 +38,7 @@ jobs:
           rsync -avz -e "ssh -i dev_key.pem -o StrictHostKeyChecking=no" \
             ./ root@${{ secrets.DEV_HOSTINE_NAME }}:/usr/local/github-action/bainance-notification-bot
 
-      - name: 🚀 Ejecutar despliegue remoto con reinicio limpio
+      - name: 🚀 Ejecutar despliegue remoto con reinicio limpio y comandos
         run: |
           ssh -i dev_key.pem -o StrictHostKeyChecking=no root@${{ secrets.DEV_HOSTINE_NAME }} << 'EOF'
             echo "📁 Entrando al proyecto"
@@ -52,5 +53,17 @@ jobs:
             echo "🔄 Reconstruyendo todo con nuevas variables..."
             docker compose --env-file .env up -d --build
 
-            echo "✅ Contenedores desplegados correctamente"
+            echo "⌛ Esperando que la base de datos esté lista..."
+            for i in {1..20}; do
+              docker exec binance-postgres pg_isready -U $POSTGRES_USER && break
+              sleep 3
+            done
+
+            echo "📈 Ejecutando migraciones Alembic..."
+            docker exec binance-notification-bot alembic upgrade head
+
+            echo "🚀 Ejecutando la aplicación"
+            docker exec -d binance-notification-bot python main.py
+
+            echo "✅ Despliegue completado"
           EOF
