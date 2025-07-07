@@ -14,19 +14,19 @@ services:
       - URL_BINANCE=${URL_BINANCE}
       - TOKEN_TELEGRAM=${TOKEN_TELEGRAM}
       - CHAT_ID_TELEGRAM=${CHAT_ID_TELEGRAM}
-      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_HOST=db
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - MINIMUM_AMOUNT=${MINIMUM_AMOUNT}
-
-      # Agrega aquí otras variables de entorno necesarias
     depends_on:
       db:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head && python main.py"
+    networks:
+      - binance-network
 
   db:
     image: postgres:16
@@ -45,6 +45,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - binance-network
 
 volumes:
   pgdata:
+
+networks:
+  binance-network:
+    driver: bridge
