@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia el resto del código de la aplicación
 COPY . .
 
-# Expone el puerto de la aplicación
+# Expone el puerto usado por la aplicación
 EXPOSE 9001
 
-# Comando por defecto para ejecutar la app con recarga automática
+# Establece el comando por defecto (comentado si lo manejarás desde GitHub Actions)
 # CMD ["python", "main.py"]
