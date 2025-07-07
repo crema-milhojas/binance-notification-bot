@@ -16,8 +16,6 @@ jobs:
 
       - name: 📄 Crear archivo .env desde GitHub Secrets
         run: |
-          echo "DEV_SSH_PEM=${{ secrets.DEV_SSH_PEM }}" >> .env
-          echo "DEV_HOSTINE_NAME=${{ secrets.DEV_HOSTINE_NAME }}" >> .env
           echo "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
           echo "PORT=${{ secrets.PORT }}" >> .env
           echo "URL_BINANCE=${{secrets.URL_BINANCE}}" >> .env
