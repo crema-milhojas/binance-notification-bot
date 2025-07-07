@@ -53,9 +53,6 @@ jobs:
             echo "🔄 Reconstruyendo servicios con nuevas variables..."
             docker compose --env-file .env build
 
-            echo "📈 Ejecutando migraciones..."
-            docker compose --env-file .env up --abort-on-container-exit migration
-
             echo "🚀 Levantando la aplicación"
             docker compose --env-file .env up -d app
 
