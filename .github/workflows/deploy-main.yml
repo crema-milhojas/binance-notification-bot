@@ -22,7 +22,8 @@ jobs:
           echo "TOKEN_TELEGRAM=${{ secrets.TOKEN_TELEGRAM }}" >> .env
           echo "CHAT_ID_TELEGRAM=${{ secrets.CHAT_ID_TELEGRAM }}" >> .env
           echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> .env
-          echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
+          echo "POSTGRES_PORT_INTERNAL=${{ secrets.POSTGRES_PORT_INTERNAL }}" >> .env
+          echo "POSTGRES_PORT_EXTERNAL=${{ secrets.POSTGRES_PORT_EXTERNAL }}" >> .env
           echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
           echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
@@ -52,6 +53,9 @@ jobs:
 
             echo "🔄 Reconstruyendo servicios con nuevas variables..."
             docker compose --env-file .env build
+
+            echo "📈 Ejecutando migraciones..."
+            docker compose --env-file .env up --abort-on-container-exit migration
 
             echo "🚀 Levantando la aplicación"
             docker compose --env-file .env up -d app
