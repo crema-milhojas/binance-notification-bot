@@ -1,0 +1,94 @@
+name: Daily Database Backup
+
+on:
+  push:
+    branches:
+      - develop  # Ejecutar solo en la rama 'develop'
+  workflow_dispatch:  # Permitir ejecución manual
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up PostgreSQL 15 and rclone
+        run: |
+          # Instalar las dependencias necesarias
+          sudo apt-get update
+          sudo apt-get install -y wget ca-certificates
+
+          # Agregar la clave del repositorio de PostgreSQL
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+          # Agregar el repositorio de PostgreSQL 15 para Ubuntu 22.04 (jammy)
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+          # Actualizar e instalar PostgreSQL 15 (cliente) y rclone
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-15 rclone
+
+      - name: Run database backup
+        env:
+          DB_NAME: ${{ secrets.POSTGRES_DB }}           # Nombre de la base de datos
+          DB_USER: ${{ secrets.POSTGRES_USER }}         # Usuario de PostgreSQL
+          DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }} # Contraseña de PostgreSQL
+          DB_HOST: ${{ secrets.DB_HOST }}               # Host de PostgreSQL
+          DB_PORT: ${{ secrets.DB_PORT }}               # Puerto de PostgreSQL
+          BACKUP_DIR: /home/runner/backup               # Usamos un directorio predefinido
+        run: |
+          # Variables de configuración
+          DB_NAME="${DB_NAME}"
+          DB_USER="${DB_USER}"
+          DB_PASSWORD="${DB_PASSWORD}"
+          DB_HOST="${DB_HOST}"
+          DB_PORT="${DB_PORT}"
+          BACKUP_DIR="${BACKUP_DIR}"
+          DATE=$(date +"%Y-%m-%d")
+          BACKUP_FILE="$BACKUP_DIR/strapi_backup_cremaymilhojas_$DATE.sql"
+
+          # Crear el directorio de backup dentro de /home/runner (directorio accesible)
+          mkdir -p $BACKUP_DIR
+          sudo chmod 777 $BACKUP_DIR  # Dar permisos completos para evitar problemas de escritura
+
+          # Decodificar y crear el archivo rclone.conf a partir del secreto base64
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG_BASE64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
+
+          # Eliminar el backup anterior si existe
+          if [ -f "$BACKUP_FILE" ]; then
+              rm "$BACKUP_FILE"
+              echo "Backup anterior eliminado."
+          fi
+
+          # Exportar la variable de contraseña para pg_dump
+          export PGPASSWORD=$DB_PASSWORD
+
+          # Crear el backup completo de la base de datos PostgreSQL (esquema y datos) en formato .sql
+          pg_dump -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" --no-owner --no-comments --no-privileges -f "$BACKUP_FILE" "$DB_NAME"
+
+          # Verificar si el backup se creó correctamente
+          if [ $? -eq 0 ]; then
+              echo "Backup de la base de datos completado exitosamente."
+
+              # Subir el backup a Google Drive usando rclone
+              rclone copy "$BACKUP_FILE" backupDrive:
+
+              # Verificar si el upload fue exitoso
+              if [ $? -eq 0 ]; then
+                  echo "Backup subido exitosamente a Google Drive."
+              else
+                  echo "Error al subir el backup a Google Drive."
+              fi
+
+              # Eliminar el archivo de backup local después de subirlo
+              rm "$BACKUP_FILE"
+              echo "Backup local eliminado después de subirlo a Google Drive."
+          else
+              echo "Error al crear el backup de la base de datos."
+          fi
+
+          # Eliminar la variable de contraseña por razones de seguridad
+          unset PGPASSWORD

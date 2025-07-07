@@ -1,0 +1,58 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: 📄 Crear archivo .env desde GitHub Secrets
+        run: |
+          echo "DEV_SSH_PEM=${{ secrets.DEV_SSH_PEM }}" >> .env
+          echo "DEV_HOSTINE_NAME=${{ secrets.DEV_HOSTINE_NAME }}" >> .env
+          echo "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
+          echo "PORT=${{ secrets.PORT }}" >> .env
+          echo "URL_BINANCE=${{secrets.URL_BINANCE}}" >> .env
+          echo "TOKEN_TELEGRAM=${{secrets.TOKEN_TELEGRAM}}" >> .env
+          echo "CHAT_ID_TELEGRAM=${{secrets.CHAT_ID_TELEGRAM}}" >> .env
+          echo "POSTGRES_HOST=${{secrets.POSTGRES_HOST}}" >> .env
+          echo "POSTGRES_PORT=${{secrets.POSTGRES_PORT}}" >> .env
+          echo "POSTGRES_USER=${{secrets.POSTGRES_USER}}" >> .env
+          echo "POSTGRES_PASSWORD=${{secrets.POSTGRES_PASSWORD}}" >> .env
+          echo "POSTGRES_DB=${{secrets.POSTGRES_DB}}" >> .env
+          echo "MINIMUM_AMOUNT=${{secrets.MINIMUM_AMOUNT}}" >> .env
+      - name: 🔐 Preparar clave SSH
+        run: |
+          echo "${{ secrets.DEV_SSH_PEM }}" > dev_key.pem
+          chmod 600 dev_key.pem
+
+      - name: 📦 Subir archivos al servidor (vía SSH)
+        run: |
+          rsync -avz -e "ssh -i dev_key.pem -o StrictHostKeyChecking=no" \
+            ./ root@${{ secrets.DEV_HOSTINE_NAME }}:/usr/local/github-action/bainance-notification-bot
+
+      - name: 🚀 Ejecutar despliegue remoto con reinicio limpio
+        run: |
+          ssh -i dev_key.pem -o StrictHostKeyChecking=no root@${{ secrets.DEV_HOSTINE_NAME }} << 'EOF'
+            echo "📁 Entrando al proyecto"
+            cd /usr/local/github-action/bainance-notification-bot
+
+            echo "🛑 Deteniendo contenedores antiguos..."
+            docker compose down
+
+            echo "🧽 Limpiando posibles cachés..."
+            docker system prune -f
+
+            echo "🔄 Reconstruyendo todo con nuevas variables..."
+            docker compose --env-file .env up -d --build
+
+            echo "✅ Contenedores desplegados correctamente"
+          EOF

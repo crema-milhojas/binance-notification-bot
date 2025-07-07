@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expone el puerto de la aplicación
-EXPOSE 8000
+EXPOSE 9001
 
 # Comando por defecto para ejecutar la app con recarga automática
 # CMD ["python", "main.py"]
