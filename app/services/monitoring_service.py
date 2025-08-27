@@ -3,7 +3,6 @@ from typing import List
 from ..schemas.arbitration_ustd_response import ArbitrationUstdResponse
 import requests
 import math
-from typing import List
 from ..utils.telegram import send_message
 from sqlalchemy.orm import Session
 from ..config.db import SessionLocal
@@ -44,7 +43,7 @@ class MonitoringService:
                     f"🔴 Mejor precio VENTA USDT: S/ {sell_price} al usuario {sell_nickname}\n"
                     f"💰 Spread: S/ {spread} ({spread_pct}%)"
                )
-               send_message(message)
+               # send_message(message)
                print("\n")
                print(message)
 

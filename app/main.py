@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from .routes import p2p
+from .routes import p2p
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.monitoring_service import MonitoringService
 
@@ -25,10 +25,10 @@ app.add_middleware(
 )
 
 # Rutas de la aplicación
-# app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
+app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
 
 # Ejecución automática de tareas
-scheduler = BackgroundScheduler()
+""" scheduler = BackgroundScheduler()
 monitoring_service = MonitoringService()
 scheduler.add_job(
     monitoring_service.arbitration_ustd,
@@ -36,7 +36,7 @@ scheduler.add_job(
     seconds=30,
     args=[int(os.environ.get("MINIMUM_AMOUNT"))]
 )
-scheduler.start()
+scheduler.start() """
 
 @app.get("/")
 async def root():
