@@ -22,6 +22,16 @@ fastapi dev main.py
 py main.py
 ```
 
+### Registrar nuevo modelo
+
+importar nuevo modelo
+
+```bash
+from app.models import arbitration_ustd, buy_zone
+```
+
+en archivo env.py de la carpeta alembic
+
 ### Generar migración
 
 ```bash

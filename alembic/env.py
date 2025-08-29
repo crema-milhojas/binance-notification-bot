@@ -33,7 +33,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.config.db import Base
-from app.models import arbitration_ustd
+from app.models import arbitration_ustd, buy_zone
 
 target_metadata = Base.metadata
 
