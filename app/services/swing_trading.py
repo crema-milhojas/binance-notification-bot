@@ -7,19 +7,19 @@ from sqlalchemy import text
 from ..config.db import SessionLocal
 from ..models.arbitration_ustd import ArbitrationUstd
 from ..utils.binance import Binance
+from ..utils.telegram import send_message
 
 
 class SwingTrading:
     session: Session
     binance: Binance
     SPREAD_EXPECTED = 0.0025
-    TRANS_AMOUNT = 0
 
-    def __init__(self):
+    def __init__(self,):
         self.binance = Binance()
         self.session: Session = SessionLocal()
 
-    def execute(self,)-> List[ArbitrationUstdResponse]:
+    def execute(self, trans_amount: int)-> List[ArbitrationUstdResponse]:
         time_ago = datetime.utcnow() - timedelta(days=7)
         recent_arbitrations = (
             self.session.query(ArbitrationUstd)
@@ -42,18 +42,18 @@ class SwingTrading:
         best_buy_price = self.best_buy_price(buyPriceList)
         best_sell_price = self.best_sell_price(sellPriceList)
 
-        buy_info = self.binance.get_best_price('BUY', ["Yape", "Plin"], self.TRANS_AMOUNT)
-        
-        if list_buy_zone_prices:
-            sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], self.TRANS_AMOUNT)  
+        buy_info = self.binance.get_best_price('BUY', ["Yape", "Plin"], trans_amount)            
+        sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], trans_amount)  
         
 
         if buy_info['price'] <= best_buy_price:
             message = (
-                    f"💲 Monto mínimo: S/ {self.TRANS_AMOUNT}\n"
+                    f"💲 Monto mínimo: S/ {trans_amount}\n"
                     f"🟢 Mejor precio COMPRA USDT: S/ {buy_info['price']} al usuario {buy_info['nickname']}\n"
             )
-            print(message)                
+            print(message)
+            print("\n")
+            send_message(message)        
 
         for buy_zone_price in list_buy_zone_prices:            
             buy_price = float(buy_zone_price["buy_price"])
@@ -61,12 +61,32 @@ class SwingTrading:
 
             if spread >= self.SPREAD_EXPECTED:
                 message = (
-                        f"💲 Monto mínimo: S/ {self.TRANS_AMOUNT}\n"
+                        f"💲 Monto mínimo: S/ {trans_amount}\n"
                         f"🟢 Precio guardado de COMPRA USDT: S/ {buy_price}\n"
                         f"🔴 Mejor precio VENTA USDT: S/ {sell_info['price']} al usuario {sell_info['nickname']}\n"
                         f"💰 Spread: S/ {spread}"
                 )
                 print(message)
+                print("\n")
+                send_message(message)
+                
+
+        new_arbitration_ustd = ArbitrationUstd(
+            trans_amount = trans_amount,
+            buy_price = buy_info['price'],
+            buyer_nickname = buy_info['nickname'],
+            sell_price = sell_info['price'],
+            seller_nickname= sell_info['nickname'],
+            spread = round(sell_info['price'] - buy_info['price'], 4)
+        )
+
+        try:
+            self.session.add(new_arbitration_ustd)
+            self.session.commit()
+        except Exception as err:
+            print(err)
+        finally:
+            self.session.close()
 
 
         return [

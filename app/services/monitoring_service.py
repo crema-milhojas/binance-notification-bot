@@ -43,7 +43,7 @@ class MonitoringService:
                     f"🔴 Mejor precio VENTA USDT: S/ {sell_price} al usuario {sell_nickname}\n"
                     f"💰 Spread: S/ {spread} ({spread_pct}%)"
                )
-               # send_message(message)
+               send_message(message)
                print("\n")
                print(message)
 

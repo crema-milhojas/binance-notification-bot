@@ -12,6 +12,6 @@ def arbitration_ustd(trans_amount: int = Query(20, description="Monto de la tran
     return monitoringService.arbitration_ustd(trans_amount)
 
 @router.get("/swing-trading", response_model=List[ArbitrationUstdResponse])
-def swing_trading():
+def swing_trading(trans_amount: int = Query(20, description="Monto de la transacción")):
     swing_trading = SwingTrading()
-    return swing_trading.execute()
+    return swing_trading.execute(trans_amount)
