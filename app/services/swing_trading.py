@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import numpy as np
 from ..schemas.arbitration_ustd_response import ArbitrationUstdResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from ..config.db import SessionLocal
 from ..models.arbitration_ustd import ArbitrationUstd
 from ..utils.binance import Binance
@@ -11,7 +12,6 @@ from ..utils.binance import Binance
 class SwingTrading:
     session: Session
     binance: Binance
-    BUY_ZONE_PRICE = 3.515
     SPREAD_EXPECTED = 0.0025
     TRANS_AMOUNT = 0
 
@@ -27,7 +27,9 @@ class SwingTrading:
             .order_by(ArbitrationUstd.create_at.desc())
             .all()
         )
-
+        buy_zone_prices = self.session.execute(text("SELECT * FROM v_latest_buy_zone")).mappings()
+        list_buy_zone_prices = list(buy_zone_prices)                   
+            
         recent_arbitrations_list = [a.as_dict() for a in recent_arbitrations]
 
         buyPriceList = []
@@ -41,24 +43,30 @@ class SwingTrading:
         best_sell_price = self.best_sell_price(sellPriceList)
 
         buy_info = self.binance.get_best_price('BUY', ["Yape", "Plin"], self.TRANS_AMOUNT)
-        sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], self.TRANS_AMOUNT)
+        
+        if list_buy_zone_prices:
+            sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], self.TRANS_AMOUNT)  
+        
 
         if buy_info['price'] <= best_buy_price:
             message = (
                     f"💲 Monto mínimo: S/ {self.TRANS_AMOUNT}\n"
                     f"🟢 Mejor precio COMPRA USDT: S/ {buy_info['price']} al usuario {buy_info['nickname']}\n"
             )
-            print(message)
+            print(message)                
 
-        spread = round(sell_info['price'] - self.BUY_ZONE_PRICE, 4)
+        for buy_zone_price in list_buy_zone_prices:            
+            buy_price = float(buy_zone_price["buy_price"])
+            spread = round(sell_info['price'] - buy_price, 4)
 
-        if spread >= self.SPREAD_EXPECTED:
-            message = (
-                    f"💲 Monto mínimo: S/ {self.TRANS_AMOUNT}\n"
-                    f"🔴 Mejor precio VENTA USDT: S/ {sell_info['price']} al usuario {sell_info['nickname']}\n"
-                    f"💰 Spread: S/ {spread}"
-            )
-            print(message)
+            if spread >= self.SPREAD_EXPECTED:
+                message = (
+                        f"💲 Monto mínimo: S/ {self.TRANS_AMOUNT}\n"
+                        f"🟢 Precio guardado de COMPRA USDT: S/ {buy_price}\n"
+                        f"🔴 Mejor precio VENTA USDT: S/ {sell_info['price']} al usuario {sell_info['nickname']}\n"
+                        f"💰 Spread: S/ {spread}"
+                )
+                print(message)
 
 
         return [
