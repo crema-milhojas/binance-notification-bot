@@ -8,6 +8,8 @@ from ..config.db import SessionLocal
 from ..models.arbitration_ustd import ArbitrationUstd
 from ..utils.binance import Binance
 from ..utils.telegram import send_message
+import math
+import time
 
 
 class SwingTrading:
@@ -20,16 +22,18 @@ class SwingTrading:
         self.session: Session = SessionLocal()
 
     def execute(self, trans_amount: int)-> List[ArbitrationUstdResponse]:
-        time_ago = datetime.utcnow() - timedelta(days=7)
+        start = time.time()
+        time_ago = datetime.utcnow() - timedelta(days=3)
+        last_buy_price = None
+        last_sell_price = None
+
         recent_arbitrations = (
             self.session.query(ArbitrationUstd)
             .filter(ArbitrationUstd.create_at >= time_ago)
             .order_by(ArbitrationUstd.create_at.desc())
             .all()
         )
-        buy_zone_prices = self.session.execute(text("SELECT * FROM v_latest_buy_zone")).mappings()
-        list_buy_zone_prices = list(buy_zone_prices)                   
-            
+                     
         recent_arbitrations_list = [a.as_dict() for a in recent_arbitrations]
 
         buyPriceList = []
@@ -42,11 +46,21 @@ class SwingTrading:
         best_buy_price = self.best_buy_price(buyPriceList)
         best_sell_price = self.best_sell_price(sellPriceList)
 
-        buy_info = self.binance.get_best_price('BUY', ["Yape", "Plin"], trans_amount)            
-        sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], trans_amount)  
-        
+        last_arbitration_ustd = self.session.query(ArbitrationUstd).order_by(ArbitrationUstd.create_at.desc()).first()
 
-        if buy_info['price'] <= best_buy_price:
+        if(last_arbitration_ustd):
+            last_buy_price = last_arbitration_ustd.buy_price
+            last_sell_price = last_arbitration_ustd.sell_price
+
+        buy_zone_prices = self.session.execute(text("SELECT * FROM v_latest_buy_zone")).mappings()
+        list_buy_zone_prices = list(buy_zone_prices)   
+
+        buy_info = self.binance.get_best_price('BUY', ["Yape", "Plin"], trans_amount)            
+        sell_info = self.binance.get_best_price('SELL', ["Yape", "Plin"], trans_amount)
+
+        enable_to_notify_buy = not math.isclose(buy_info['price'], last_buy_price, abs_tol=1e-6)        
+                
+        if buy_info['price'] <= best_buy_price and enable_to_notify_buy:
             message = (
                     f"💲 Monto mínimo: S/ {trans_amount}\n"
                     f"🟢 Mejor precio COMPRA USDT: S/ {buy_info['price']} al usuario {buy_info['nickname']}\n"
@@ -59,7 +73,9 @@ class SwingTrading:
             buy_price = float(buy_zone_price["buy_price"])
             spread = round(sell_info['price'] - buy_price, 4)
 
-            if spread >= self.SPREAD_EXPECTED:
+            enable_to_notify_sell = not math.isclose(sell_info['price'], last_sell_price, abs_tol=1e-6)
+
+            if spread >= self.SPREAD_EXPECTED and enable_to_notify_sell:
                 message = (
                         f"💲 Monto mínimo: S/ {trans_amount}\n"
                         f"🟢 Precio guardado de COMPRA USDT: S/ {buy_price}\n"
@@ -70,7 +86,6 @@ class SwingTrading:
                 print("\n")
                 send_message(message)
                 
-
         new_arbitration_ustd = ArbitrationUstd(
             trans_amount = trans_amount,
             buy_price = buy_info['price'],
@@ -88,7 +103,10 @@ class SwingTrading:
         finally:
             self.session.close()
 
-
+        end = time.time()
+        duration = end - start
+        print(f"SwingTrading.execute terminó en {duration:.2f} segundos")
+        
         return [
             ArbitrationUstdResponse(
                 response_code="00",
