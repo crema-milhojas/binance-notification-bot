@@ -13,3 +13,6 @@ class ArbitrationUstd(Base):
     seller_nickname = Column(String(100)) 
     spread = Column(Numeric(precision=18, scale=3))
     create_at = Column(DateTime, server_default=func.now())
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

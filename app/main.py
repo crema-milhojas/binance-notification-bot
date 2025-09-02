@@ -1,9 +1,10 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from .routes import p2p
+from .routes import p2p
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.monitoring_service import MonitoringService
+from .services.swing_trading import SwingTrading
 
 
 
@@ -25,15 +26,22 @@ app.add_middleware(
 )
 
 # Rutas de la aplicación
-# app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"])
+""" app.include_router(p2p.router, prefix="/v1/p2p", tags=["P2P"]) """
 
 # Ejecución automática de tareas
 scheduler = BackgroundScheduler()
 monitoring_service = MonitoringService()
-scheduler.add_job(
+swing_trading = SwingTrading()
+""" scheduler.add_job(
     monitoring_service.arbitration_ustd,
     'interval',
     seconds=30,
+    args=[int(os.environ.get("MINIMUM_AMOUNT"))]
+) """
+scheduler.add_job(
+    swing_trading.execute,
+    'interval',
+    seconds=60,
     args=[int(os.environ.get("MINIMUM_AMOUNT"))]
 )
 scheduler.start()

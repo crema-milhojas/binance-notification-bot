@@ -10,7 +10,7 @@ from alembic import context
 load_dotenv()
 
 host = os.environ.get("POSTGRES_HOST")
-port = os.environ.get("POSTGRES_PORT")
+port = os.environ.get("POSTGRES_PORT_INTERNAL")
 user = os.environ.get("POSTGRES_USER")
 password = os.environ.get("POSTGRES_PASSWORD")
 db_name = os.environ.get("POSTGRES_DB")
@@ -33,7 +33,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.config.db import Base
-from app.models import arbitration_ustd
+from app.models import arbitration_ustd, buy_zone
 
 target_metadata = Base.metadata
 
