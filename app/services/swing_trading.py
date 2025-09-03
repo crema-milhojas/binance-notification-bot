@@ -16,6 +16,7 @@ class SwingTrading:
     session: Session
     binance: Binance
     SPREAD_EXPECTED = 0.0025
+    DATA_WINDOWS = 7
 
     def __init__(self,):
         self.binance = Binance()
@@ -23,7 +24,7 @@ class SwingTrading:
 
     def execute(self, trans_amount: int)-> List[ArbitrationUstdResponse]:
         start = time.time()
-        time_ago = datetime.utcnow() - timedelta(days=3)
+        time_ago = datetime.utcnow() - timedelta(days=self.DATA_WINDOWS)
         last_buy_price = None
         last_sell_price = None
 
@@ -120,7 +121,7 @@ class SwingTrading:
         ]
     
     def best_buy_price(self, priceList: List[float]):
-        p25_buy = np.percentile(priceList, 25)
+        p25_buy = np.percentile(priceList, 5)
         return p25_buy
 
     def best_sell_price(self, priceList: List[float]):

@@ -41,7 +41,7 @@ swing_trading = SwingTrading()
 scheduler.add_job(
     swing_trading.execute,
     'interval',
-    seconds=60,
+    seconds=300,
     args=[int(os.environ.get("MINIMUM_AMOUNT"))]
 )
 scheduler.start()
